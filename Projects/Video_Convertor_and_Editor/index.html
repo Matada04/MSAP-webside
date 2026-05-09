@@ -1,0 +1,1318 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VSP - Video • Strih • Processing</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap');
+
+  :root {
+    --bg: #08111f;
+    --bg-soft: #101a2f;
+    --panel: rgba(12, 21, 38, 0.82);
+    --panel-strong: rgba(14, 26, 48, 0.94);
+    --panel-light: rgba(24, 41, 73, 0.72);
+    --line: rgba(140, 191, 255, 0.14);
+    --line-strong: rgba(93, 217, 200, 0.38);
+    --text: #edf5ff;
+    --text-soft: #9db0ca;
+    --accent: #5dd9c8;
+    --accent-2: #74a7ff;
+    --accent-3: #ffb86c;
+    --shadow: 0 30px 90px rgba(2, 8, 20, 0.42);
+    --shadow-soft: 0 16px 45px rgba(2, 8, 20, 0.24);
+  }
+
+  * { box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    color: var(--text);
+    font-family: "Space Mono", monospace;
+    background:
+      radial-gradient(circle at 10% 12%, rgba(93, 217, 200, 0.16), transparent 22%),
+      radial-gradient(circle at 92% 10%, rgba(116, 167, 255, 0.18), transparent 20%),
+      radial-gradient(circle at 50% 100%, rgba(255, 184, 108, 0.12), transparent 26%),
+      linear-gradient(180deg, #07101c 0%, #0d1627 45%, #08101d 100%);
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px);
+    background-size: 28px 28px;
+    mask-image: radial-gradient(circle at center, black 45%, transparent 100%);
+    opacity: 0.2;
+  }
+
+  .page-shell {
+    width: min(1180px, calc(100% - 28px));
+    margin: 0 auto;
+    padding: 24px 0 54px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 18px;
+  }
+
+  .back-btn,
+  .top-note {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 11px 16px;
+    border-radius: 999px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(16px);
+    box-shadow: var(--shadow-soft);
+    color: var(--text);
+  }
+
+  .back-btn {
+    cursor: pointer;
+    font: inherit;
+    transition: 0.18s ease;
+  }
+
+  .back-btn:hover {
+    transform: translateY(-1px);
+    border-color: rgba(93, 217, 200, 0.42);
+    color: var(--accent);
+  }
+
+  .top-note {
+    color: var(--text-soft);
+    font-size: 0.82rem;
+  }
+
+  .hero {
+    position: relative;
+    overflow: hidden;
+    padding: 34px 32px 30px;
+    border-radius: 34px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background:
+      radial-gradient(circle at top center, rgba(93, 217, 200, 0.12), transparent 34%),
+      linear-gradient(145deg, rgba(18, 33, 58, 0.96), rgba(10, 18, 33, 0.94));
+    box-shadow: var(--shadow);
+  }
+
+  .hero::after {
+    content: "";
+    position: absolute;
+    right: -90px;
+    top: -60px;
+    width: 360px;
+    height: 360px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(116, 167, 255, 0.18), transparent 68%);
+    pointer-events: none;
+  }
+
+  .hero-logo {
+    display: block;
+    width: min(100%, 820px);
+    height: auto;
+    margin: 0 auto;
+    filter: drop-shadow(0 18px 28px rgba(0,0,0,0.24));
+  }
+
+  .hero-copy {
+    margin: 18px auto 0;
+    max-width: 820px;
+    text-align: center;
+    color: var(--text-soft);
+    line-height: 1.8;
+    font-size: 0.96rem;
+  }
+
+  .hero-actions {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 24px;
+  }
+
+  .hero-chip {
+    padding: 12px 16px;
+    border-radius: 999px;
+    border: 1px solid rgba(93, 217, 200, 0.18);
+    background: rgba(255,255,255,0.05);
+    color: var(--text);
+    font-size: 0.84rem;
+    box-shadow: var(--shadow-soft);
+  }
+
+  .main-grid {
+    margin-top: 22px;
+    display: grid;
+    grid-template-columns: 320px minmax(0, 1fr);
+    gap: 18px;
+    align-items: start;
+  }
+
+  .feature-nav,
+  .workspace {
+    border-radius: 30px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: var(--panel);
+    backdrop-filter: blur(20px);
+    box-shadow: var(--shadow-soft);
+  }
+
+  .feature-nav {
+    padding: 18px;
+    position: sticky;
+    top: 22px;
+  }
+
+  .section-kicker {
+    color: var(--accent);
+    font-size: 0.76rem;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    margin-bottom: 12px;
+  }
+
+  .nav-title {
+    margin: 0 0 10px;
+    font-size: 1.28rem;
+    line-height: 1.35;
+  }
+
+  .nav-copy {
+    margin: 0 0 16px;
+    color: var(--text-soft);
+    font-size: 0.85rem;
+    line-height: 1.8;
+  }
+
+  .mode-list {
+    display: grid;
+    gap: 12px;
+  }
+
+  .mode-btn {
+    width: 100%;
+    text-align: left;
+    padding: 16px 16px 15px;
+    border-radius: 22px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02)),
+      rgba(255,255,255,0.03);
+    color: var(--text);
+    cursor: pointer;
+    font: inherit;
+    transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+  }
+
+  .mode-btn:hover,
+  .mode-btn.active {
+    transform: translateY(-1px);
+    border-color: rgba(93, 217, 200, 0.34);
+    background:
+      linear-gradient(180deg, rgba(93,217,200,0.12), rgba(116,167,255,0.06)),
+      rgba(255,255,255,0.04);
+  }
+
+  .mode-btn strong {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 0.95rem;
+  }
+
+  .mode-btn span {
+    display: block;
+    color: var(--text-soft);
+    font-size: 0.78rem;
+    line-height: 1.7;
+  }
+
+  .workspace {
+    padding: 20px;
+  }
+
+  .panel {
+    display: none;
+    animation: fade-in 0.28s ease;
+  }
+
+  .panel.active { display: block; }
+
+  @keyframes fade-in {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .panel-hero {
+    padding: 24px;
+    border-radius: 26px;
+    background:
+      linear-gradient(135deg, rgba(93,217,200,0.12), rgba(116,167,255,0.08) 52%, rgba(255,255,255,0.03)),
+      rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+
+  .panel-hero h2 {
+    margin: 0 0 10px;
+    font-size: 1.45rem;
+  }
+
+  .panel-hero p {
+    margin: 0;
+    color: var(--text-soft);
+    line-height: 1.8;
+    font-size: 0.92rem;
+  }
+
+  .drop-zone {
+    margin-top: 18px;
+    border-radius: 28px;
+    border: 1.5px solid rgba(93,217,200,0.18);
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.03)),
+      rgba(10, 18, 33, 0.3);
+    padding: 42px 28px;
+    text-align: center;
+    cursor: pointer;
+    transition: 0.18s ease;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+  }
+
+  .drop-zone:hover,
+  .drop-zone.dragover {
+    transform: translateY(-1px);
+    border-color: rgba(93,217,200,0.34);
+    box-shadow:
+      0 20px 40px rgba(9, 20, 35, 0.2),
+      inset 0 1px 0 rgba(255,255,255,0.1);
+  }
+
+  .drop-zone .icon {
+    font-size: 0.92rem;
+    color: var(--accent);
+    margin-bottom: 16px;
+  }
+
+  .drop-zone .title {
+    font-size: 1.14rem;
+    font-weight: 700;
+    margin-bottom: 10px;
+  }
+
+  .drop-zone .subtitle {
+    color: var(--text-soft);
+    font-size: 0.9rem;
+    line-height: 1.75;
+  }
+
+  input[type="file"] { display: none; }
+
+  .stack-card,
+  .status-bar,
+  .download-card,
+  .trim-controls,
+  .dataset-controls,
+  .dataset-summary {
+    margin-top: 16px;
+    border-radius: 24px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.04);
+    box-shadow: var(--shadow-soft);
+    backdrop-filter: blur(14px);
+  }
+
+  .stack-card {
+    display: none;
+    padding: 16px 18px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  .stack-card.visible { display: flex; }
+
+  .file-name {
+    color: var(--accent);
+    font-weight: 700;
+    overflow-wrap: anywhere;
+  }
+
+  .file-size {
+    color: var(--text-soft);
+    font-size: 0.84rem;
+  }
+
+  .status-bar {
+    min-height: 58px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 18px;
+    color: var(--text-soft);
+  }
+
+  .status-bar.loading { color: var(--accent); }
+  .status-bar.success { color: #c8fff7; }
+  .status-bar.error { color: #ffb1b1; }
+
+  .spinner {
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    border: 2px solid currentColor;
+    border-top-color: transparent;
+    animation: spin 0.82s linear infinite;
+  }
+
+  .progress-wrap {
+    display: none;
+    margin-top: 10px;
+    height: 8px;
+    border-radius: 999px;
+    overflow: hidden;
+    background: rgba(255,255,255,0.08);
+  }
+
+  .progress-wrap.visible { display: block; }
+
+  .progress-bar {
+    width: 0%;
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2), var(--accent-3));
+    transition: width 0.14s linear;
+  }
+
+  .actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 18px;
+  }
+
+  .btn {
+    border-radius: 999px;
+    padding: 12px 18px;
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.9rem;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.06);
+    color: var(--text);
+    transition: 0.18s ease;
+    box-shadow: var(--shadow-soft);
+  }
+
+  .btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+    border-color: rgba(93,217,200,0.26);
+  }
+
+  .btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, #5dd9c8, #5f9bff);
+    color: #05131a;
+    border-color: transparent;
+    font-weight: 700;
+  }
+
+  .btn-dark {
+    background: linear-gradient(135deg, #111216, #232633);
+    color: #ffffff;
+    border-color: transparent;
+    font-weight: 700;
+  }
+
+  .download-card {
+    display: none;
+    padding: 18px;
+  }
+
+  .download-card.visible { display: block; }
+
+  .download-sub {
+    margin-top: 10px;
+    color: var(--text-soft);
+    line-height: 1.7;
+    font-size: 0.88rem;
+  }
+
+  .trim-controls {
+    display: none;
+    overflow: hidden;
+  }
+
+  .trim-controls.visible { display: block; }
+
+  .trim-video-wrap {
+    background: #000;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .trim-video-wrap video {
+    display: block;
+    width: 100%;
+    max-height: 360px;
+  }
+
+  .trim-inner,
+  .dataset-controls,
+  .dataset-summary {
+    padding: 20px;
+  }
+
+  .trim-timeline {
+    position: relative;
+    height: 62px;
+    overflow: hidden;
+    border-radius: 20px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background:
+      linear-gradient(90deg, rgba(93,217,200,0.1), rgba(116,167,255,0.08)),
+      rgba(255,255,255,0.04);
+  }
+
+  .timeline-track {
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 22px,
+      rgba(255,255,255,0.08) 22px,
+      rgba(255,255,255,0.08) 23px
+    );
+  }
+
+  .timeline-selection {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    border-left: 2px solid var(--accent);
+    border-right: 2px solid var(--accent);
+    background: rgba(93,217,200,0.18);
+  }
+
+  .grid-two {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    margin-top: 16px;
+  }
+
+  .dataset-summary {
+    display: none;
+  }
+
+  .dataset-summary.visible { display: block; }
+
+  .field label {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--text-soft);
+    font-size: 0.84rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  .field input {
+    width: 100%;
+    padding: 14px 14px;
+    border-radius: 16px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.06);
+    color: var(--text);
+    font: inherit;
+  }
+
+  .field input[type="range"] {
+    padding: 0;
+    background: transparent;
+    accent-color: var(--accent);
+  }
+
+  .time-display {
+    margin-top: 8px;
+    color: #d8fffa;
+    font-weight: 700;
+  }
+
+  footer {
+    margin-top: 26px;
+    text-align: center;
+    color: var(--text-soft);
+    font-size: 0.74rem;
+    letter-spacing: 0.06em;
+  }
+
+  @media (max-width: 1280px) {
+    .main-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .feature-nav {
+      position: relative;
+      top: 0;
+    }
+  }
+
+  @media (max-width: 760px) {
+    .page-shell {
+      width: min(100%, calc(100% - 18px));
+      padding: 16px 0 34px;
+    }
+
+    .topbar {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .hero {
+      padding: 24px 18px 20px;
+      border-radius: 26px;
+    }
+
+    .tabs,
+    .grid-two {
+      grid-template-columns: 1fr;
+    }
+
+    .workspace,
+    .feature-nav,
+    .panel {
+      padding-left: 16px;
+      padding-right: 16px;
+    }
+
+    .stack-card {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  }
+</style>
+</head>
+<body>
+  <div class="page-shell">
+    <div class="topbar">
+      <button class="back-btn" type="button" onclick="goBackToPortal()">← Späť na portál</button>
+    </div>
+
+    <header class="hero">
+      <img class="hero-logo" src="logo.png" alt="VSP">
+      <p class="hero-copy">Najlepšie miesto pre prevod videa, presný strih aj generovanie datasetu obrázkov.</p>
+    </header>
+
+    <div class="main-grid">
+      <aside class="feature-nav">
+        <div class="section-kicker">Nástroje</div>
+        <h1 class="nav-title">Vyberte si režim práce</h1>
+
+        <div class="mode-list">
+          <button class="mode-btn active" onclick="switchTab(0)">
+            <strong>Konverzia</strong>
+            <span>Konvertujte MOV na MP4 súbory.</span>
+          </button>
+          <button class="mode-btn" onclick="switchTab(1)">
+            <strong>Strih</strong>
+            <span>Vyberte presný časový rozsah a exportujte nový video súbor.</span>
+          </button>
+          <button class="mode-btn" onclick="switchTab(2)">
+            <strong>Sampling</strong>
+            <span>Výber ľubovolného intervalu odberu obrázkov z videa do vybraného priečinka.</span>
+          </button>
+        </div>
+      </aside>
+
+      <main class="workspace">
+        <section class="panel active">
+          <div class="panel-hero">
+            <div class="section-kicker">Konverzia</div>
+            <h2>Konverzia MOV na MP4</h2>
+          </div>
+
+          <div class="drop-zone" id="dz1" onclick="document.getElementById('file-mov').click()">
+            <div class="icon">[ MOV INPUT ]</div>
+            <div class="title">Pretiahnite .mov súbor</div>
+            <div class="subtitle">alebo kliknite pre výber súboru určeného na konverziu.</div>
+          </div>
+          <input type="file" id="file-mov" accept=".mov,.qt,video/quicktime">
+
+          <div class="stack-card" id="fc1">
+            <div class="file-name" id="fn1"></div>
+            <div class="file-size" id="fs1"></div>
+          </div>
+
+          <div class="status-bar" id="status1"><span>Čakám na MOV súbor...</span></div>
+          <div class="progress-wrap" id="prog1"><div class="progress-bar" id="pb1"></div></div>
+
+          <div class="actions">
+            <button class="btn btn-primary" id="btn-convert" onclick="convertMov()" disabled>Konvertovať</button>
+          </div>
+
+          <div class="download-card" id="dl1">
+            <a class="btn btn-primary" id="dl1-link" href="#" download>Stiahnuť výstup</a>
+            <div class="download-sub" id="dl1-sub"></div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-hero">
+            <div class="section-kicker">Strih</div>
+            <h2>Presné strihanie MP4 videa</h2>
+            <p>Vyberte presný začiatok a koniec úseku. Výstup sa vytvára plynulo, s náhľadom a samostatným exportom priamo v prehliadači.</p>
+          </div>
+
+          <div class="drop-zone" id="dz2" onclick="document.getElementById('file-mp4').click()">
+            <div class="icon">[ MP4 TRIM ]</div>
+            <div class="title">Pretiahnite .mp4 súbor</div>
+            <div class="subtitle">nastavte rozsah a vytvorte orezaný výstupný súbor.</div>
+          </div>
+          <input type="file" id="file-mp4" accept=".mp4,.m4v,video/mp4">
+
+          <div class="stack-card" id="fc2">
+            <div class="file-name" id="fn2"></div>
+            <div class="file-size" id="fs2"></div>
+          </div>
+
+          <div class="status-bar" id="status2"><span>Čakám na MP4 súbor...</span></div>
+          <div class="progress-wrap" id="prog2"><div class="progress-bar" id="pb2"></div></div>
+
+          <div class="trim-controls" id="trim-controls">
+            <div class="trim-video-wrap">
+              <video id="trim-preview" controls></video>
+            </div>
+            <div class="trim-inner">
+              <div class="trim-timeline">
+                <div class="timeline-track"></div>
+                <div class="timeline-selection" id="tl-sel"></div>
+              </div>
+
+              <div class="grid-two">
+                <div class="field">
+                  <label for="trim-start">Začiatok</label>
+                  <input type="range" id="trim-start" min="0" max="100" value="0" step="0.05">
+                  <div class="time-display" id="trim-start-display">0:00.0</div>
+                </div>
+                <div class="field">
+                  <label for="trim-end">Koniec</label>
+                  <input type="range" id="trim-end" min="0" max="100" value="100" step="0.05">
+                  <div class="time-display" id="trim-end-display">0:00.0</div>
+                </div>
+              </div>
+
+              <div class="actions">
+                <button class="btn" onclick="previewTrim()">Prehrať úsek</button>
+                <button class="btn btn-dark" id="btn-trim" onclick="trimVideo()" disabled>Vytvoriť výstup</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="download-card" id="dl2">
+            <a class="btn btn-dark" id="dl2-link" href="#" download>Stiahnuť výstup</a>
+            <div class="download-sub" id="dl2-sub"></div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-hero">
+            <div class="section-kicker">Sampling</div>
+            <h2>Dataset obrázkov z videa</h2>
+            <p>Nahrajte MP4, zvoľte interval odberu a spustite extrakciu. Obrázky sa uložia do jedného priečinka, ktorý si používateľ vyberie v prehliadači.</p>
+          </div>
+
+          <div class="drop-zone" id="dz3" onclick="document.getElementById('file-dataset').click()">
+            <div class="icon">[ FRAME SAMPLING ]</div>
+            <div class="title">Pretiahnite .mp4 súbor</div>
+            <div class="subtitle">z videa sa odoberie séria obrázkov v pravidelnom časovom intervale.</div>
+          </div>
+          <input type="file" id="file-dataset" accept=".mp4,.m4v,video/mp4">
+
+          <div class="stack-card" id="fc3">
+            <div class="file-name" id="fn3"></div>
+            <div class="file-size" id="fs3"></div>
+          </div>
+
+          <div class="status-bar" id="status3"><span>Čakám na MP4 súbor pre dataset...</span></div>
+          <div class="progress-wrap" id="prog3"><div class="progress-bar" id="pb3"></div></div>
+
+          <div class="dataset-controls" id="dataset-controls">
+            <div class="grid-two">
+              <div class="field">
+                <label for="dataset-interval">Interval odberu (sekundy)</label>
+                <input type="number" id="dataset-interval" min="0.1" step="0.1" value="1">
+              </div>
+              <div class="field">
+                <label for="dataset-prefix">Prefix súborov</label>
+                <input type="text" id="dataset-prefix" value="frame">
+              </div>
+            </div>
+
+            <div class="actions">
+              <button class="btn" type="button" onclick="chooseDatasetFolder()">Vybrať priečinok</button>
+              <button class="btn btn-primary" id="btn-dataset" type="button" onclick="extractDatasetFrames()" disabled>Spustiť extrakciu</button>
+            </div>
+          </div>
+
+          <div class="dataset-summary" id="dataset-summary">
+            <div class="download-sub" id="dataset-summary-text"></div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <footer>҈ 2026 Matej Adamec, FEI STU. All lefts reserved</footer>
+  </div>
+
+  <script>
+    function switchTab(index) {
+      document.querySelectorAll('.panel').forEach((panel, i) => panel.classList.toggle('active', i === index));
+      document.querySelectorAll('.mode-btn').forEach((button, i) => button.classList.toggle('active', i === index));
+      document.querySelectorAll('.tab-btn').forEach((button, i) => button.classList.toggle('active', i === index));
+    }
+
+    function goBackToPortal() {
+      if (window.history.length > 1) {
+        window.history.back();
+      } else {
+        window.location.href = 'about:blank';
+      }
+    }
+
+    function setupDrop(dropId, inputId, onFile) {
+      const drop = document.getElementById(dropId);
+      const input = document.getElementById(inputId);
+
+      drop.addEventListener('dragover', (event) => {
+        event.preventDefault();
+        drop.classList.add('dragover');
+      });
+
+      drop.addEventListener('dragleave', () => drop.classList.remove('dragover'));
+      drop.addEventListener('drop', (event) => {
+        event.preventDefault();
+        drop.classList.remove('dragover');
+        if (event.dataTransfer.files[0]) onFile(event.dataTransfer.files[0]);
+      });
+
+      input.addEventListener('change', () => {
+        if (input.files[0]) onFile(input.files[0]);
+      });
+    }
+
+    function fmtSize(bytes) {
+      if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+      return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    }
+
+    function fmtTime(seconds) {
+      const safe = Math.max(0, Number(seconds) || 0);
+      const mins = Math.floor(safe / 60);
+      const secs = (safe % 60).toFixed(1);
+      return `${mins}:${secs.padStart(4, '0')}`;
+    }
+
+    function setStatus(id, message, type = '') {
+      const el = document.getElementById(id);
+      el.className = `status-bar ${type}`.trim();
+      el.innerHTML = type === 'loading'
+        ? `<div class="spinner"></div><span>${message}</span>`
+        : `<span>${message}</span>`;
+    }
+
+    function setProgress(id, percent) {
+      const el = document.getElementById(id);
+      if (el) el.style.width = `${percent}%`;
+    }
+
+    function revokeUrl(url) {
+      if (url) URL.revokeObjectURL(url);
+    }
+
+    function waitForMediaEvent(target, successEvent, errorMessage) {
+      return new Promise((resolve, reject) => {
+        const onSuccess = () => {
+          cleanup();
+          resolve();
+        };
+        const onError = () => {
+          cleanup();
+          reject(new Error(errorMessage));
+        };
+        const cleanup = () => {
+          target.removeEventListener(successEvent, onSuccess);
+          target.removeEventListener('error', onError);
+        };
+
+        target.addEventListener(successEvent, onSuccess, { once: true });
+        target.addEventListener('error', onError, { once: true });
+      });
+    }
+
+    function pickRecorderFormat() {
+      const candidates = [
+        { mime: 'video/mp4;codecs=avc1.42E01E,mp4a.40.2', ext: 'mp4' },
+        { mime: 'video/mp4', ext: 'mp4' },
+        { mime: 'video/webm;codecs=vp9,opus', ext: 'webm' },
+        { mime: 'video/webm;codecs=vp8,opus', ext: 'webm' },
+        { mime: 'video/webm', ext: 'webm' }
+      ];
+      return candidates.find((candidate) => MediaRecorder.isTypeSupported(candidate.mime)) || { mime: '', ext: 'webm' };
+    }
+
+    function startVideoPainting(video, ctx, width, height, onFrame) {
+      let active = true;
+      let rafId = 0;
+      let frameCallbackId = 0;
+
+      const draw = () => {
+        if (!active || video.readyState < 2) return;
+        ctx.drawImage(video, 0, 0, width, height);
+        onFrame(video.currentTime);
+      };
+
+      if ('requestVideoFrameCallback' in HTMLVideoElement.prototype) {
+        const loop = () => {
+          if (!active) return;
+          draw();
+          frameCallbackId = video.requestVideoFrameCallback(loop);
+        };
+        frameCallbackId = video.requestVideoFrameCallback(loop);
+      } else {
+        const loop = () => {
+          if (!active) return;
+          draw();
+          rafId = requestAnimationFrame(loop);
+        };
+        rafId = requestAnimationFrame(loop);
+      }
+
+      return () => {
+        active = false;
+        if (video.cancelVideoFrameCallback && frameCallbackId) video.cancelVideoFrameCallback(frameCallbackId);
+        if (rafId) cancelAnimationFrame(rafId);
+      };
+    }
+
+    async function prepareSourceVideo(file) {
+      const url = URL.createObjectURL(file);
+      const video = document.createElement('video');
+      video.src = url;
+      video.preload = 'auto';
+      video.playsInline = true;
+      video.crossOrigin = 'anonymous';
+      video.load();
+      await waitForMediaEvent(video, 'loadedmetadata', 'Video sa nepodarilo načítať.');
+      if (video.readyState < 2) await waitForMediaEvent(video, 'loadeddata', 'Video sa nepodarilo dekódovať.');
+      return { video, url };
+    }
+
+    async function seekVideo(video, time) {
+      if (Math.abs(video.currentTime - time) < 0.01) return;
+      video.currentTime = time;
+      await waitForMediaEvent(video, 'seeked', 'Presun vo videu zlyhal.');
+    }
+
+    async function recordClip(file, options = {}) {
+      const { startSec = 0, endSec = null, onProgress = () => {} } = options;
+      const { video, url } = await prepareSourceVideo(file);
+      const totalDuration = video.duration;
+
+      if (!isFinite(totalDuration) || totalDuration <= 0) {
+        revokeUrl(url);
+        throw new Error('Neplatná dĺžka videa.');
+      }
+
+      const clipStart = Math.max(0, Math.min(startSec, totalDuration));
+      const clipEnd = Math.max(clipStart, Math.min(endSec == null ? totalDuration : endSec, totalDuration));
+      const clipDuration = clipEnd - clipStart;
+
+      if (clipDuration < 0.08) {
+        revokeUrl(url);
+        throw new Error('Vybraný úsek je príliš krátky.');
+      }
+
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth || 1280;
+      canvas.height = video.videoHeight || 720;
+      const ctx = canvas.getContext('2d', { alpha: false });
+      if (!ctx) {
+        revokeUrl(url);
+        throw new Error('Canvas 2D kontext nie je dostupný.');
+      }
+
+      await seekVideo(video, clipStart);
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      const stream = canvas.captureStream(30);
+      let audioContext = null;
+      let audioSource = null;
+
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (AudioCtx) {
+          audioContext = new AudioCtx();
+          const destination = audioContext.createMediaStreamDestination();
+          audioSource = audioContext.createMediaElementSource(video);
+          audioSource.connect(destination);
+          destination.stream.getAudioTracks().forEach((track) => stream.addTrack(track));
+          if (audioContext.state === 'suspended') await audioContext.resume();
+        }
+      } catch (error) {
+        console.warn('Audio sa nepodarilo pripojiť:', error);
+      }
+
+      const format = pickRecorderFormat();
+      const recorderOptions = { videoBitsPerSecond: 10000000, audioBitsPerSecond: 192000 };
+      if (format.mime) recorderOptions.mimeType = format.mime;
+
+      const recorder = new MediaRecorder(stream, recorderOptions);
+      const chunks = [];
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) chunks.push(event.data);
+      };
+
+      let stopResolver;
+      const stopped = new Promise((resolve) => {
+        stopResolver = resolve;
+      });
+      recorder.onstop = () => stopResolver();
+
+      let finished = false;
+      const finishRecording = () => {
+        if (finished) return;
+        finished = true;
+        video.pause();
+        if (recorder.state !== 'inactive') recorder.stop();
+      };
+
+      const stopPainting = startVideoPainting(video, ctx, canvas.width, canvas.height, (currentTime) => {
+        const clipTime = Math.max(0, currentTime - clipStart);
+        const ratio = Math.min(1, clipTime / clipDuration);
+        onProgress(ratio * 100, clipTime, clipDuration);
+        if (currentTime >= clipEnd - (1 / 30)) setTimeout(finishRecording, 90);
+      });
+
+      video.addEventListener('ended', finishRecording, { once: true });
+      video.playbackRate = 1;
+      video.defaultPlaybackRate = 1;
+      if ('preservesPitch' in video) video.preservesPitch = true;
+
+      recorder.start(500);
+      await video.play();
+      await stopped;
+
+      stopPainting();
+      stream.getTracks().forEach((track) => track.stop());
+      if (audioSource) audioSource.disconnect();
+      if (audioContext && audioContext.state !== 'closed') await audioContext.close();
+      revokeUrl(url);
+
+      const mime = recorder.mimeType || format.mime || 'video/webm';
+      return {
+        blob: new Blob(chunks, { type: mime }),
+        mime,
+        ext: mime.startsWith('video/mp4') ? 'mp4' : 'webm'
+      };
+    }
+
+    let movFile = null;
+    let mp4File = null;
+    let datasetFile = null;
+    let datasetDirectoryHandle = null;
+    let videoDuration = 0;
+    let trimPreviewUrl = null;
+    let trimPreviewTimer = 0;
+
+    setupDrop('dz1', 'file-mov', (file) => {
+      movFile = file;
+      document.getElementById('fn1').textContent = file.name;
+      document.getElementById('fs1').textContent = fmtSize(file.size);
+      document.getElementById('fc1').classList.add('visible');
+      document.getElementById('btn-convert').disabled = false;
+      document.getElementById('dl1').classList.remove('visible');
+      document.getElementById('prog1').classList.remove('visible');
+      setStatus('status1', `Súbor načítaný: ${file.name}`);
+    });
+
+    setupDrop('dz2', 'file-mp4', (file) => {
+      mp4File = file;
+      document.getElementById('fn2').textContent = file.name;
+      document.getElementById('fs2').textContent = fmtSize(file.size);
+      document.getElementById('fc2').classList.add('visible');
+      document.getElementById('dl2').classList.remove('visible');
+      document.getElementById('prog2').classList.remove('visible');
+
+      const preview = document.getElementById('trim-preview');
+      if (trimPreviewUrl) revokeUrl(trimPreviewUrl);
+      trimPreviewUrl = URL.createObjectURL(file);
+      preview.src = trimPreviewUrl;
+      preview.load();
+
+      preview.onloadedmetadata = () => {
+        videoDuration = preview.duration;
+        const start = document.getElementById('trim-start');
+        const end = document.getElementById('trim-end');
+        start.max = videoDuration;
+        end.max = videoDuration;
+        start.value = 0;
+        end.value = videoDuration;
+        document.getElementById('trim-start-display').textContent = fmtTime(0);
+        document.getElementById('trim-end-display').textContent = fmtTime(videoDuration);
+        updateTimeline();
+        document.getElementById('trim-controls').classList.add('visible');
+        document.getElementById('btn-trim').disabled = false;
+        setStatus('status2', `Dĺžka videa: ${fmtTime(videoDuration)}. Nastavte úsek.`);
+      };
+    });
+
+    setupDrop('dz3', 'file-dataset', (file) => {
+      datasetFile = file;
+      document.getElementById('fn3').textContent = file.name;
+      document.getElementById('fs3').textContent = fmtSize(file.size);
+      document.getElementById('fc3').classList.add('visible');
+      document.getElementById('dataset-summary').classList.remove('visible');
+      document.getElementById('prog3').classList.remove('visible');
+      updateDatasetButtonState();
+      setStatus('status3', `Súbor pre sampling načítaný: ${file.name}`);
+    });
+
+    async function convertMov() {
+      if (!movFile) return;
+      const button = document.getElementById('btn-convert');
+      button.disabled = true;
+      document.getElementById('dl1').classList.remove('visible');
+      document.getElementById('prog1').classList.add('visible');
+      setProgress('pb1', 0);
+      setStatus('status1', 'Pripravujem konverziu...', 'loading');
+
+      try {
+        const result = await recordClip(movFile, {
+          onProgress: (percent, current, total) => {
+            setProgress('pb1', Math.min(99, Math.round(percent)));
+            setStatus('status1', `Konvertujem ${fmtTime(current)} / ${fmtTime(total)}...`, 'loading');
+          }
+        });
+
+        const outputUrl = URL.createObjectURL(result.blob);
+        const base = movFile.name.replace(/\.(mov|qt)$/i, '');
+        const link = document.getElementById('dl1-link');
+        link.href = outputUrl;
+        link.download = `${base}.${result.ext}`;
+        document.getElementById('dl1-sub').textContent = `Formát: ${result.mime || result.ext.toUpperCase()} | Veľkosť: ${fmtSize(result.blob.size)}`;
+        document.getElementById('dl1').classList.add('visible');
+        setProgress('pb1', 100);
+        setStatus('status1', result.ext === 'mp4'
+          ? 'Hotovo. Výstup je MP4.'
+          : 'Hotovo. Tento prehliadač ukladá výstup ako WEBM, lebo MP4 zápis cez MediaRecorder nepodporuje.', 'success');
+      } catch (error) {
+        setStatus('status1', `Chyba: ${error.message}`, 'error');
+        console.error(error);
+      }
+
+      button.disabled = false;
+    }
+
+    document.getElementById('trim-start').addEventListener('input', function () {
+      const end = parseFloat(document.getElementById('trim-end').value);
+      if (parseFloat(this.value) >= end) this.value = Math.max(0, end - 0.05);
+      document.getElementById('trim-start-display').textContent = fmtTime(parseFloat(this.value));
+      updateTimeline();
+    });
+
+    document.getElementById('trim-end').addEventListener('input', function () {
+      const start = parseFloat(document.getElementById('trim-start').value);
+      if (parseFloat(this.value) <= start) this.value = Math.min(videoDuration, start + 0.05);
+      document.getElementById('trim-end-display').textContent = fmtTime(parseFloat(this.value));
+      updateTimeline();
+    });
+
+    function updateTimeline() {
+      if (!videoDuration) return;
+      const start = parseFloat(document.getElementById('trim-start').value);
+      const end = parseFloat(document.getElementById('trim-end').value);
+      const selection = document.getElementById('tl-sel');
+      selection.style.left = `${(start / videoDuration) * 100}%`;
+      selection.style.width = `${((end - start) / videoDuration) * 100}%`;
+    }
+
+    function previewTrim() {
+      const video = document.getElementById('trim-preview');
+      const start = parseFloat(document.getElementById('trim-start').value);
+      const end = parseFloat(document.getElementById('trim-end').value);
+      clearInterval(trimPreviewTimer);
+      video.currentTime = start;
+      video.play();
+
+      trimPreviewTimer = setInterval(() => {
+        if (video.currentTime >= end || video.ended) {
+          video.pause();
+          clearInterval(trimPreviewTimer);
+        }
+      }, 50);
+    }
+
+    async function trimVideo() {
+      if (!mp4File) return;
+      const startSec = parseFloat(document.getElementById('trim-start').value);
+      const endSec = parseFloat(document.getElementById('trim-end').value);
+      const button = document.getElementById('btn-trim');
+
+      button.disabled = true;
+      document.getElementById('dl2').classList.remove('visible');
+      document.getElementById('prog2').classList.add('visible');
+      setProgress('pb2', 0);
+      setStatus('status2', `Strihám úsek ${fmtTime(startSec)} - ${fmtTime(endSec)}...`, 'loading');
+
+      try {
+        const result = await recordClip(mp4File, {
+          startSec,
+          endSec,
+          onProgress: (percent, current, total) => {
+            setProgress('pb2', Math.min(99, Math.round(percent)));
+            setStatus('status2', `Nahrávam úsek ${fmtTime(current)} / ${fmtTime(total)}...`, 'loading');
+          }
+        });
+
+        const outputUrl = URL.createObjectURL(result.blob);
+        const base = mp4File.name.replace(/\.(mp4|m4v)$/i, '');
+        const link = document.getElementById('dl2-link');
+        link.href = outputUrl;
+        link.download = `${base}_trimmed.${result.ext}`;
+        document.getElementById('dl2-sub').textContent = `Úsek: ${fmtTime(startSec)} - ${fmtTime(endSec)} | Veľkosť: ${fmtSize(result.blob.size)}`;
+        document.getElementById('dl2').classList.add('visible');
+        setProgress('pb2', 100);
+        setStatus('status2', result.ext === 'mp4'
+          ? 'Strihanie dokončené. Výstup je MP4.'
+          : 'Strihanie dokončené. Tento prehliadač ukladá výstup ako WEBM, lebo MP4 zápis cez MediaRecorder nepodporuje.', 'success');
+      } catch (error) {
+        setStatus('status2', `Chyba: ${error.message}`, 'error');
+        console.error(error);
+      }
+
+      button.disabled = false;
+    }
+
+    async function chooseDatasetFolder() {
+      if (!window.showDirectoryPicker) {
+        setStatus('status3', 'Tento prehliadač nepodporuje výber priečinka. Použite Chrome alebo Edge.', 'error');
+        return;
+      }
+
+      try {
+        datasetDirectoryHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+        updateDatasetButtonState();
+        setStatus('status3', `Vybraný priečinok: ${datasetDirectoryHandle.name}`, 'success');
+      } catch (error) {
+        if (error && error.name !== 'AbortError') {
+          setStatus('status3', `Chyba pri výbere priečinka: ${error.message}`, 'error');
+        }
+      }
+    }
+
+    function updateDatasetButtonState() {
+      document.getElementById('btn-dataset').disabled = !(datasetFile && datasetDirectoryHandle);
+    }
+
+    function padNumber(number, width) {
+      return String(number).padStart(width, '0');
+    }
+
+    async function saveFrameToDirectory(canvas, directoryHandle, filename) {
+      const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+      if (!blob) throw new Error('Nepodarilo sa vytvoriť PNG obrázok.');
+      const fileHandle = await directoryHandle.getFileHandle(filename, { create: true });
+      const writable = await fileHandle.createWritable();
+      await writable.write(blob);
+      await writable.close();
+    }
+
+    async function extractDatasetFrames() {
+      if (!datasetFile || !datasetDirectoryHandle) return;
+
+      const interval = parseFloat(document.getElementById('dataset-interval').value);
+      const prefixRaw = document.getElementById('dataset-prefix').value.trim();
+      const prefix = prefixRaw || 'frame';
+
+      if (!isFinite(interval) || interval <= 0) {
+        setStatus('status3', 'Interval musí byť väčší ako nula.', 'error');
+        return;
+      }
+
+      const button = document.getElementById('btn-dataset');
+      button.disabled = true;
+      document.getElementById('prog3').classList.add('visible');
+      document.getElementById('dataset-summary').classList.remove('visible');
+      setProgress('pb3', 0);
+      setStatus('status3', 'Pripravujem sampling obrázkov...', 'loading');
+
+      let prepared = null;
+      try {
+        prepared = await prepareSourceVideo(datasetFile);
+        const { video, url } = prepared;
+        const duration = video.duration;
+        if (!isFinite(duration) || duration <= 0) throw new Error('Video nemá platnú dĺžku.');
+
+        const frameTimes = [];
+        for (let time = 0; time < duration; time += interval) {
+          frameTimes.push(Number(time.toFixed(3)));
+        }
+        if (!frameTimes.includes(Number(duration.toFixed(3)))) {
+          frameTimes.push(Number(duration.toFixed(3)));
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth || 1280;
+        canvas.height = video.videoHeight || 720;
+        const ctx = canvas.getContext('2d', { alpha: false });
+        if (!ctx) throw new Error('Canvas 2D kontext nie je dostupný.');
+
+        for (let index = 0; index < frameTimes.length; index++) {
+          const time = Math.min(frameTimes[index], duration);
+          await seekVideo(video, time);
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          const filename = `${prefix}_${padNumber(index + 1, 4)}.png`;
+          await saveFrameToDirectory(canvas, datasetDirectoryHandle, filename);
+
+          const percent = Math.round(((index + 1) / frameTimes.length) * 100);
+          setProgress('pb3', percent);
+          setStatus('status3', `Ukladám obrázky ${index + 1} / ${frameTimes.length}...`, 'loading');
+        }
+
+        revokeUrl(url);
+        document.getElementById('dataset-summary').classList.add('visible');
+        document.getElementById('dataset-summary-text').textContent =
+          `Hotovo. Do priečinka "${datasetDirectoryHandle.name}" bolo uložených ${frameTimes.length} obrázkov. Súbory sú uložené v jednom spoločnom priečinku podľa zvoleného prefixu.`;
+        setStatus('status3', `Sampling dokončený. Obrázky boli uložené do priečinka ${datasetDirectoryHandle.name}.`, 'success');
+      } catch (error) {
+        setStatus('status3', `Chyba: ${error.message}`, 'error');
+        console.error(error);
+      } finally {
+        if (prepared) revokeUrl(prepared.url);
+        button.disabled = false;
+      }
+    }
+  </script>
+</body>
+</html>
